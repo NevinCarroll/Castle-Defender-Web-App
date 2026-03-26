@@ -155,6 +155,7 @@ class Game {
         this.placePreview = false;
         this.previewPos = new Vec2(0, 0);
         this.lastTime = 0;
+        this.statsDiv = document.getElementById('stats');
         this.goldEarned = 0;
         this.enemiesKilled = 0;
         this.towersPlaced = 0;
