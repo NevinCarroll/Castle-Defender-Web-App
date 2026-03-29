@@ -164,6 +164,12 @@ class Game {
     }
 
     setupInput() {
+        this.canvas.addEventListener('mousemove', (e) => {
+            if (!this.placePreview) return;
+            const rect = this.canvas.getBoundingClientRect();
+            this.previewPos = new Vec2(e.clientX - rect.left, e.clientY - rect.top);
+        });
+
         this.canvas.addEventListener('mousedown', (e) => {
             const rect = this.canvas.getBoundingClientRect();
             const pos = new Vec2(e.clientX - rect.left, e.clientY - rect.top);
@@ -173,28 +179,44 @@ class Game {
                 this.placePreview = false;
             }
         });
+
         this.canvas.addEventListener('contextmenu', (e) => e.preventDefault());
 
         document.addEventListener('keydown', (e) => {
-            if (e.key === '1') this.selectedTowerType = TowerType.Standard;
-            if (e.key === '2') this.selectedTowerType = TowerType.Rapid;
-            if (e.key === '3') this.selectedTowerType = TowerType.Sniper;
+            if (e.key === '1') this.startTowerPlacement(TowerType.Standard);
+            if (e.key === '2') this.startTowerPlacement(TowerType.Rapid);
+            if (e.key === '3') this.startTowerPlacement(TowerType.Sniper);
             if (e.key === 'Escape') this.quitGame();
         });
+
+        const btnStandard = document.getElementById('btnStandard');
+        const btnRapid = document.getElementById('btnRapid');
+        const btnSniper = document.getElementById('btnSniper');
+
+        if (btnStandard) btnStandard.addEventListener('click', () => this.startTowerPlacement(TowerType.Standard));
+        if (btnRapid) btnRapid.addEventListener('click', () => this.startTowerPlacement(TowerType.Rapid));
+        if (btnSniper) btnSniper.addEventListener('click', () => this.startTowerPlacement(TowerType.Sniper));
+    }
+
+    startTowerPlacement(typeID) {
+        this.selectedTowerType = typeID;
+        this.placePreview = true;
     }
 
     handleLeftClick(pos) {
-        if (this.placePreview) {
-            const cfg = TowerConfigs[this.selectedTowerType];
-            if (this.gold >= cfg.cost && this.isValidPlacement(pos)) {
-                this.towers.push(new Tower(pos, this.selectedTowerType));
-                this.gold -= cfg.cost;
-                this.towersPlaced++;
-            }
+        if (!this.placePreview) {
+            return;
+        }
+
+        const cfg = TowerConfigs[this.selectedTowerType];
+        if (this.gold >= cfg.cost && this.isValidPlacement(pos)) {
+            this.towers.push(new Tower(pos, this.selectedTowerType));
+            this.gold -= cfg.cost;
+            this.towersPlaced++;
             this.placePreview = false;
         } else {
-            this.placePreview = true;
-            this.previewPos = pos;
+            // Keep preview active; invalid placement just does not place
+            // (player can adjust position and click again)
         }
     }
 
