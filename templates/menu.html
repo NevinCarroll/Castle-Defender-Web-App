@@ -4,73 +4,20 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Castle Defender - Menu</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            background-color: #2f4f4f;
-            color: white;
-            text-align: center;
-            padding: 50px;
-        }
-        h1 {
-            font-size: 3em;
-        }
-        button {
-            font-size: 1.5em;
-            padding: 10px 20px;
-            margin: 10px;
-            background-color: #4682b4;
-            color: white;
-            border: none;
-            cursor: pointer;
-        }
-        button:hover {
-            background-color: #5a9bd4;
-        }
-    </style>
+    <link rel="stylesheet" href="/static/style.css">
 </head>
 <body>
     <h1>Castle Defender</h1>
     {{ if .User }}
         <p>Logged in as <strong>{{ .User }}</strong>. <a href="/logout">Logout</a></p>
         <button id="btnStartNew">Start New Game</button>
-        <button id="btnContinue" style="display:none">Continue Saved Game</button>
-        <button onclick="window.location.href='/tutorial'">Tutorial</button>
+        <button id="btnContinue">Continue Saved Game</button>
+        <button id="btnTutorial">Tutorial</button>
     {{ else }}
-        <button onclick="window.location.href='/login'">Login</button>
-        <button onclick="window.location.href='/register'">Register</button>
-        <button onclick="window.location.href='/tutorial'">Tutorial</button>
+        <button id="btnLogin">Login</button>
+        <button id="btnRegister">Register</button>
+        <button id="btnTutorial">Tutorial</button>
     {{ end }}
-    <script>
-        const currentUser = "{{ .User }}";
-
-        async function updateMenuContinueButton() {
-            const continueBtn = document.getElementById('btnContinue');
-            if (!continueBtn) return;
-            try {
-                const resp = await fetch('/load');
-                continueBtn.style.display = resp.status === 200 ? 'inline-block' : 'none';
-            } catch (err) {
-                continueBtn.style.display = 'none';
-            }
-        }
-
-        const startBtn = document.getElementById('btnStartNew');
-        if (startBtn) {
-            startBtn.addEventListener('click', async () => {
-                await fetch('/delete-save', { method: 'POST' });
-                window.location.href = '/game';
-            });
-        }
-
-        const continueBtn = document.getElementById('btnContinue');
-        if (continueBtn) {
-            continueBtn.addEventListener('click', () => {
-                window.location.href = '/game?continue=1';
-            });
-        }
-
-        updateMenuContinueButton();
-    </script>
+    <script src="/static/menu.js"></script>
 </body>
 </html>

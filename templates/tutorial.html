@@ -4,34 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Castle Defender - Tutorial</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            background-color: #2f4f4f;
-            color: white;
-            text-align: center;
-            padding: 20px;
-        }
-        h1 {
-            font-size: 2em;
-        }
-        p {
-            font-size: 1.2em;
-            line-height: 1.5;
-        }
-        button {
-            font-size: 1.5em;
-            padding: 10px 20px;
-            margin: 10px;
-            background-color: #4682b4;
-            color: white;
-            border: none;
-            cursor: pointer;
-        }
-        button:hover {
-            background-color: #5a9bd4;
-        }
-    </style>
+    <link rel="stylesheet" href="/static/style.css">
 </head>
 <body>
     <h1>TUTORIAL</h1>
@@ -43,6 +16,7 @@
         Survive as many waves of enemies as you can<br>
         or press quit to end game early
     </p>
-    <button onclick="window.location.href='/'">Back</button>
+    <button id="btnBack">Back</button>
+    <script src="/static/tutorial.js"></script>
 </body>
 </html>

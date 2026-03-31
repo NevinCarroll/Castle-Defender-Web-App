@@ -4,49 +4,14 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Castle Defender - Game Over</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            background-color: #000;
-            color: white;
-            text-align: center;
-            padding: 50px;
-        }
-        h1 {
-            font-size: 3em;
-            color: red;
-        }
-        p {
-            font-size: 1.2em;
-        }
-        button {
-            font-size: 1.5em;
-            padding: 10px 20px;
-            margin: 10px;
-            background-color: #4682b4;
-            color: white;
-            border: none;
-            cursor: pointer;
-        }
-        button:hover {
-            background-color: #5a9bd4;
-        }
-    </style>
+    <link rel="stylesheet" href="/static/style.css">
 </head>
 <body>
     <h1>GAME OVER</h1>
     <p id="reason"></p>
     <p id="stats"></p>
-    <button onclick="window.location.href='/game'">Start New Game</button>
-    <button onclick="window.location.href='/'">Back to Menu</button>
-    <script>
-        document.getElementById('reason').textContent = 'Reason: ' + (localStorage.getItem('gameOverReason') || 'Unknown');
-        document.getElementById('stats').innerHTML = `
-            Gold earned: ${localStorage.getItem('goldEarned') || 0}<br>
-            Enemies killed: ${localStorage.getItem('enemiesKilled') || 0}<br>
-            Towers placed: ${localStorage.getItem('towersPlaced') || 0}<br>
-            Waves survived: ${localStorage.getItem('wavesSurvived') || 0}
-        `;
-    </script>
+    <button id="btnStartNew">Start New Game</button>
+    <button id="btnBackToMenu">Back to Menu</button>
+    <script src="/static/game-over.js"></script>
 </body>
 </html>
