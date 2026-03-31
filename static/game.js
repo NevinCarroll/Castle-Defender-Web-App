@@ -172,9 +172,19 @@ class Game {
         this.enemiesKilled = 0;
         this.towersPlaced = 0;
 
+        const user = document.body.dataset.user || 'guest';
+        this.saveKey = `castle_save_${user}`;
+
         this.seed = Math.floor(Math.random() * 1000000);
         this.rng = new SeededRNG(this.seed);
         this.waveInProgress = false;
+
+        const params = new URLSearchParams(window.location.search);
+        const shouldContinue = params.get('continue') === '1';
+        if (shouldContinue && this.loadSavedGame()) {
+            this.waveInProgress = false;
+            this.updateWaveButtonState();
+        }
 
         this.setupInput();
         this.setupWaveControls();
@@ -240,6 +250,41 @@ class Game {
         if (this.waveInfoDiv) {
             this.waveInfoDiv.innerText = `Wave ${this.wave + 1} ready (seed: ${this.seed})`;
         }
+    }
+
+    saveGame() {
+        const saveData = {
+            wave: this.wave,
+            lives: this.lives,
+            gold: this.gold,
+            towers: this.towers.map(t => ({ x: t.pos.x, y: t.pos.y, typeID: t.typeID })),
+            seed: this.seed
+        };
+        localStorage.setItem(this.saveKey, JSON.stringify(saveData));
+    }
+
+    loadSavedGame() {
+        const saved = localStorage.getItem(this.saveKey);
+        if (!saved) return false;
+        try {
+            const data = JSON.parse(saved);
+            this.wave = Number(data.wave) || 0;
+            this.lives = Number(data.lives) || 5;
+            this.gold = Number(data.gold) || 300;
+            this.path = this.path || this.path;
+            this.towers = (data.towers || []).map(t => new Tower(new Vec2(Number(t.x), Number(t.y)), Number(t.typeID)));
+            this.enemies = [];
+            this.seed = Number(data.seed) || this.seed;
+            this.rng = new SeededRNG(this.seed);
+            return true;
+        } catch (err) {
+            console.error('Failed to load saved game', err);
+            return false;
+        }
+    }
+
+    clearSave() {
+        localStorage.removeItem(this.saveKey);
     }
 
     startTowerPlacement(typeID) {
@@ -328,6 +373,7 @@ class Game {
         if (this.waveInProgress && this.enemies.length === 0) {
             this.waveInProgress = false;
             this.updateWaveButtonState();
+            this.saveGame();
         }
 
         for (const t of this.towers) {
@@ -433,6 +479,7 @@ class Game {
     }
 
     gameOver(reason) {
+        this.clearSave();
         // Store stats in localStorage
         localStorage.setItem('gameOverReason', reason);
         localStorage.setItem('goldEarned', this.goldEarned);

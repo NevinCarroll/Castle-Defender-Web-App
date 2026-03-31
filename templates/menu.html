@@ -33,11 +33,45 @@
     <h1>Castle Defender</h1>
     {{ if .User }}
         <p>Logged in as <strong>{{ .User }}</strong>. <a href="/logout">Logout</a></p>
-        <button onclick="window.location.href='/game'">Start Game</button>
+        <button id="btnStartNew">Start New Game</button>
+        <button id="btnContinue" style="display:none">Continue Saved Game</button>
     {{ else }}
         <button onclick="window.location.href='/login'">Login</button>
         <button onclick="window.location.href='/register'">Register</button>
     {{ end }}
     <button onclick="window.location.href='/quit'">Quit</button>
+    <script>
+        const currentUser = "{{ .User }}";
+        const saveKey = `castle_save_${currentUser || 'guest'}`;
+
+        function updateMenuContinueButton() {
+            const continueBtn = document.getElementById('btnContinue');
+            if (!continueBtn) return;
+            const saved = localStorage.getItem(saveKey);
+            if (saved) {
+                continueBtn.style.display = 'inline-block';
+            } else {
+                continueBtn.style.display = 'none';
+            }
+        }
+
+        const startBtn = document.getElementById('btnStartNew');
+        if (startBtn) {
+            startBtn.addEventListener('click', () => {
+                localStorage.removeItem(saveKey);
+                window.location.href = '/game';
+            });
+        }
+
+        const continueBtn = document.getElementById('btnContinue');
+        if (continueBtn) {
+            continueBtn.addEventListener('click', () => {
+                window.location.href = '/game?continue=1';
+            });
+        }
+
+        updateMenuContinueButton();
+        window.addEventListener('storage', updateMenuContinueButton);
+    </script>
 </body>
 </html>
