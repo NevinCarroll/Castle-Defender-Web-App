@@ -20,17 +20,20 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
+// Sql Lite Database Connection
 var db *sql.DB
 
 // initDB sets up the SQLite database connection and required tables.
 // This function is called once at application startup.
 func initDB() {
+	// Make Connection to Database
 	var err error
 	db, err = sql.Open("sqlite3", "accounts.db")
 	if err != nil {
 		log.Fatalf("failed to open database: %v", err)
 	}
 
+	// Create Users Table
 	stmt := `CREATE TABLE IF NOT EXISTS users (
 		id INTEGER PRIMARY KEY AUTOINCREMENT,
 		username TEXT NOT NULL UNIQUE,
@@ -40,6 +43,7 @@ func initDB() {
 		log.Fatalf("failed to initialize database: %v", err)
 	}
 
+	// Create Saves Table
 	stmt2 := `CREATE TABLE IF NOT EXISTS saves (
 		id INTEGER PRIMARY KEY AUTOINCREMENT,
 		username TEXT NOT NULL UNIQUE,
@@ -57,7 +61,9 @@ func initDB() {
 
 // getCurrentUser returns the username from session, or empty when unauthenticated.
 func getCurrentUser(c *gin.Context) string {
+	// Get session
 	s := sessions.Default(c)
+	// Get username
 	user, ok := s.Get("user").(string)
 	if !ok {
 		return ""
@@ -84,12 +90,16 @@ func isAllowedUsernameChar(r rune) bool {
 
 // validateUsername checks username constraints and returns an error message when invalid.
 func validateUsername(username string) string {
+	// Username can't be empty
 	if username == "" {
 		return "Username cannot be empty"
 	}
+	// Username can't be longer than 15 characters
 	if len(username) > 15 {
 		return "Username must be 15 characters or fewer"
 	}
+
+	// Userncame can't have whitespace
 	for _, r := range username {
 		if r == ' ' || r == '\t' || r == '\n' || r == '\r' {
 			return "Username cannot contain whitespace"
@@ -103,24 +113,26 @@ func validateUsername(username string) string {
 
 // validatePassword checks password constraints and returns an error message when invalid.
 func validatePassword(password string) string {
+	// Password can't be empty
 	if password == "" {
 		return "Password cannot be empty"
 	}
+	//Password can't be longer than 15 characters
 	if len(password) > 15 {
 		return "Password must be 15 characters or fewer"
 	}
+	// Password can't contain whitespace
 	for _, r := range password {
 		if r == ' ' || r == '\t' || r == '\n' || r == '\r' {
 			return "Password cannot contain whitespace"
-		}
-		if r < 32 || r == 127 {
-			return "Password contains invalid control characters"
 		}
 	}
 	return ""
 }
 
+// requireAuth check if user is logged in, if not, redirect to login page
 func requireAuth() gin.HandlerFunc {
+	// Get sesssion and check if there is a username stored
 	return func(c *gin.Context) {
 		if getCurrentUser(c) == "" {
 			c.Redirect(http.StatusSeeOther, "/login")
@@ -131,15 +143,19 @@ func requireAuth() gin.HandlerFunc {
 	}
 }
 
+// main Creates routes for all pages and functions of the website, also opens or creates the database
 func main() {
+	// Create database
 	initDB()
 	defer db.Close()
 
+	// Create web-app
 	r := gin.Default()
 	r.Use(sessions.Sessions("castle_session", cookie.NewStore([]byte("super-secret-key"))))
-	r.LoadHTMLGlob("templates/*")
-	r.Static("/static", "./static")
+	r.LoadHTMLGlob("templates/*") // HTML templates
+	r.Static("/static", "./static") // Static resources, JS and CSS
 
+	// Main menu
 	r.GET("/", func(c *gin.Context) {
 		c.HTML(http.StatusOK, "menu.html", gin.H{"User": getCurrentUser(c)})
 	})
@@ -149,6 +165,7 @@ func main() {
 		c.HTML(http.StatusOK, "register.html", gin.H{"Error": ""})
 	})
 
+	// Check and verify password and usernames before inserting into database
 	r.POST("/register", func(c *gin.Context) {
 		username := c.PostForm("username")
 		password := c.PostForm("password")
