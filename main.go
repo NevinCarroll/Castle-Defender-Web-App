@@ -55,6 +55,58 @@ func getCurrentUser(c *gin.Context) string {
 	return user
 }
 
+func isAllowedUsernameChar(r rune) bool {
+	if r >= 'a' && r <= 'z' {
+		return true
+	}
+	if r >= 'A' && r <= 'Z' {
+		return true
+	}
+	if r >= '0' && r <= '9' {
+		return true
+	}
+	if r == '_' || r == '-' || r == '.' {
+		return true
+	}
+	return false
+}
+
+func validateUsername(username string) string {
+	if username == "" {
+		return "Username cannot be empty"
+	}
+	if len(username) > 15 {
+		return "Username must be 15 characters or fewer"
+	}
+	for _, r := range username {
+		if r == ' ' || r == '\t' || r == '\n' || r == '\r' {
+			return "Username cannot contain whitespace"
+		}
+		if !isAllowedUsernameChar(r) {
+			return "Username can only contain letters, numbers, underscore, dash, and dot"
+		}
+	}
+	return ""
+}
+
+func validatePassword(password string) string {
+	if password == "" {
+		return "Password cannot be empty"
+	}
+	if len(password) > 15 {
+		return "Password must be 15 characters or fewer"
+	}
+	for _, r := range password {
+		if r == ' ' || r == '\t' || r == '\n' || r == '\r' {
+			return "Password cannot contain whitespace"
+		}
+		if r < 32 || r == 127 {
+			return "Password contains invalid control characters"
+		}
+	}
+	return ""
+}
+
 func requireAuth() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		if getCurrentUser(c) == "" {
@@ -91,7 +143,15 @@ func main() {
 			c.HTML(http.StatusBadRequest, "register.html", gin.H{"Error": "Username and password cannot be empty"})
 			return
 		}
+		if errMsg := validateUsername(username); errMsg != "" {
+			c.HTML(http.StatusBadRequest, "register.html", gin.H{"Error": errMsg})
+			return
+		}
 
+		if errMsg := validatePassword(password); errMsg != "" {
+			c.HTML(http.StatusBadRequest, "register.html", gin.H{"Error": errMsg})
+			return
+		}
 		hash, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
 		if err != nil {
 			c.HTML(http.StatusInternalServerError, "register.html", gin.H{"Error": "Failed to hash password"})
