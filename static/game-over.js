@@ -14,6 +14,7 @@ document.addEventListener('DOMContentLoaded', () => {
         reasonEl.textContent = 'Reason: ' + (localStorage.getItem('gameOverReason') || 'Unknown');
     }
 
+    // Stats of player at time of game over
     if (statsEl) {
         statsEl.innerHTML = `
             Gold earned: ${localStorage.getItem('goldEarned') || 0}<br>
@@ -31,6 +32,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
+    // Back to main menu
     const menuBtn = document.getElementById('btnBackToMenu');
     if (menuBtn) {
         menuBtn.addEventListener('click', () => {

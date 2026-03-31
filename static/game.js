@@ -112,15 +112,15 @@ const TowerType = {
 };
 
 const EnemyConfigs = {
-    [EnemyType.Default]: { health: 1.0, speed: 60.0, color: '#dc143c' },
-    [EnemyType.Fast]: { health: 0.5, speed: 90.0, color: '#dda0dd' },
-    [EnemyType.Tank]: { health: 3.0, speed: 40.0, color: '#8b0000' }
+    [EnemyType.Default]: { health: 5.0, speed: 60.0, color: '#dc143c' },
+    [EnemyType.Fast]: { health: 3, speed: 90.0, color: '#dda0dd' },
+    [EnemyType.Tank]: { health: 10.0, speed: 40.0, color: '#8b0000' }
 };
 
 const TowerConfigs = {
     [TowerType.Standard]: { radius: 120, damage: 1.0, attackCadence: 0.16, cost: 100, color: '#ffd700' },
     [TowerType.Rapid]: { radius: 90, damage: 0.5, attackCadence: 0.08, cost: 100, color: '#00ff7f' },
-    [TowerType.Sniper]: { radius: 180, damage: 2.5, attackCadence: 0.35, cost: 100, color: '#4169e1' }
+    [TowerType.Sniper]: { radius: 180, damage: 3, attackCadence: 0.35, cost: 100, color: '#4169e1' }
 };
 
 /**
@@ -160,8 +160,9 @@ class Enemy {
         // Move towards target by speed * delta time.
         this.pos = this.pos.add(dir.scaled(this.speed * dt));
 
-        // If enemy is close enough to the target node, advance path index.
+        // If enemy is close enough to the target node, snap and advance index.
         if (this.pos.sub(target).len() < 5) {
+            this.pos = target;
             this.pathIndex++;
         }
     }
@@ -172,7 +173,11 @@ class Enemy {
      * @returns {boolean}
      */
     reachedEnd(path) {
-        return this.pathIndex >= path.length - 1;
+        const endIndex = path.length - 1;
+        if (this.pathIndex >= endIndex) return true;
+        // Guard for floating-point movement and edge cases, so enemies are removed at goal.
+        const distanceToEnd = this.pos.sub(path[endIndex]).len();
+        return distanceToEnd < 10;
     }
 
     /**
@@ -418,30 +423,9 @@ class Game {
     }
 
     clearSave() {
+        // If application has server-based save endpoints, clear them.
         fetch('/delete-save', { method: 'POST' }).catch(err => console.error('Failed to clear server save', err));
-    }
-
-    startTowerPlacement(typeID) {
-        const saved = localStorage.getItem(this.saveKey);
-        if (!saved) return false;
-        try {
-            const data = JSON.parse(saved);
-            this.wave = Number(data.wave) || 0;
-            this.lives = Number(data.lives) || 5;
-            this.gold = Number(data.gold) || 300;
-            this.path = this.path || this.path;
-            this.towers = (data.towers || []).map(t => new Tower(new Vec2(Number(t.x), Number(t.y)), Number(t.typeID)));
-            this.enemies = [];
-            this.seed = Number(data.seed) || this.seed;
-            this.rng = new SeededRNG(this.seed);
-            return true;
-        } catch (err) {
-            console.error('Failed to load saved game', err);
-            return false;
-        }
-    }
-
-    clearSave() {
+        // Also clear local storage backing key to avoid stale state.
         localStorage.removeItem(this.saveKey);
     }
 
@@ -577,7 +561,7 @@ class Game {
         }
 
         if (this.waveInProgress && this.enemies.length === 0) {
-            // Wave complete, allow next wave and save progress.
+            // Wave complete (either all enemies killed or all slipped through): allow next wave and save progress.
             this.waveInProgress = false;
             this.updateWaveButtonState();
             this.saveGame();
