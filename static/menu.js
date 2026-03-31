@@ -1,3 +1,12 @@
+/**
+ * menu.js - controls menu buttons on the main menu page.
+ */
+/**
+ * menu.js - controls menu buttons on the main menu page.
+ *
+ * This file attaches events for Continue, Start New, Tutorial, Login, and Register.
+ */
+
 document.addEventListener('DOMContentLoaded', () => {
     const continueBtn = document.getElementById('btnContinue');
     if (continueBtn) {
@@ -14,6 +23,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
+    // start a new game; delete existing save then navigate to game page.
     const startBtn = document.getElementById('btnStartNew');
     if (startBtn) {
         startBtn.addEventListener('click', async () => {

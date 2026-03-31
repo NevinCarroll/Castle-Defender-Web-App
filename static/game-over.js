@@ -1,3 +1,11 @@
+/**
+ * game-over.js - shows final stats and navigation on game over page.
+ */
+/**
+ * game-over.js - shows final stats and navigation on game over page.
+ *
+ * Reads values saved to LocalStorage by Game#gameOver() and renders to the page.
+ */
 document.addEventListener('DOMContentLoaded', () => {
     const reasonEl = document.getElementById('reason');
     const statsEl = document.getElementById('stats');
@@ -15,6 +23,7 @@ document.addEventListener('DOMContentLoaded', () => {
         `;
     }
 
+    // Start new game button: navigates back to gameplay.
     const startNewBtn = document.getElementById('btnStartNew');
     if (startNewBtn) {
         startNewBtn.addEventListener('click', () => {

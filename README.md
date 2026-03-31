@@ -1,39 +1,66 @@
 # Castle Defender Webapp
 
-A web-based tower defense game built with Go and Gin for the backend, and JavaScript for the game logic.
+A web-based tower defense game with Go/Gin for backend routing and asset serving, combined with client-side JavaScript game logic and HTML5 canvas rendering.
+
+## What this project is
+
+- A full-stack prototype game for learning modern Go web development and browser game architecture.
+- Supports menu, tutorial, gameplay, and game over workflows.
+- Runs locally with a lightweight web server, no database required.
 
 ## Features
 
-- Menu, Tutorial, Game, and Game Over pages
-- Real-time tower defense gameplay in the browser
-- Multiple tower types: Standard, Rapid, Sniper
-- Enemy waves with different types: Default, Fast, Tank
-- Canvas-based rendering
+- Single-page style game loop in JavaScript (enemies, towers, waves)
+- Tower types: Standard, Rapid, Sniper
+- Enemy types: Default, Fast, Tank
+- Progressive waves with increasing difficulty
+- Canvas-based rendering and responsive UI controls
+- Gin router serves these endpoints:
+  - `/`
+  - `/tutorial`
+  - `/game`
+  - `/game-over`
 
-## How to Run
+## Technology stack
 
-1. Ensure you have Go installed.
-2. Run `go mod tidy` to install dependencies.
-3. Run `go run .` to start the server on port 8081.
-4. Open a browser and go to `http://localhost:8081`.
+- Go 1.20+ (or current stable release)
+- Gin Web Framework
+- HTML5/CSS3 in `templates/`
+- JavaScript in `static/`
 
-## Navigation
+## Prerequisites
 
-- `/` : Main menu
-- `/tutorial` : Tutorial page
-- `/game` : Game page with canvas
-- `/game-over` : Game over screen
+1. Go installed: https://go.dev/dl/
+2. Optional: modern browser (Chrome, Edge, Firefox)
+
+## Setup and run
+
+```bash
+cd "C:\Users\nevin\Nextcloud\School Work\CS-495\Projects\Go\Web"
+go mod tidy
+go run .
+```
+
+Then open `http://localhost:8080` in your browser.
+
+## Project structure
+
+- `main.go` - Gin server + routing
+- `go.mod`, `go.sum` - dependencies
+- `templates/` - HTML page templates (`menu.html`, `game.html`, etc.)
+- `static/` - client JS and CSS (`game.js`, `tutorial.js`, `style.css`)
+
+## Routes
+
+- `/` -> Main menu
+- `/tutorial` -> Tutorial page
+- `/game` -> Game canvas and controls
+- `/game-over` -> Summary and retry
 
 ## Game Controls
 
-- 1-3: Select tower type
-- Left click: Place tower (after selecting type)
-- Right click: Cancel placement
-- Esc: Quit game
+- `1`, `2`, `3`: choose tower type
+- Left-click: place selected tower
+- Right-click: cancel tower placement
+- `Esc`: quit / return to menu
 
-## Architecture
-
-- **Backend (Go/Gin)**: Serves HTML pages and static JS/CSS files. Handles page routing.
-- **Frontend (JavaScript)**: Implements game logic, rendering, and user input on the game page.
-
-The game state is managed client-side in JavaScript, with no server-side persistence.

@@ -1,46 +1,99 @@
-// game.js - Castle Defender Game Logic
+/**
+ * game.js - Castle Defender Game Logic
+ *
+ * This module drives game simulation, rendering, user input, and persistence.
+ */
 
+/**
+ * 2D vector utility for position and movement math.
+ */
 class Vec2 {
+    /**
+     * @param {number} x
+     * @param {number} y
+     */
     constructor(x, y) {
         this.x = x;
         this.y = y;
     }
 
+    /**
+     * Subtract vector v from this vector.
+     * @param {Vec2} v
+     * @returns {Vec2}
+     */
     sub(v) {
         return new Vec2(this.x - v.x, this.y - v.y);
     }
 
+    /**
+     * Add vector v to this vector.
+     * @param {Vec2} v
+     * @returns {Vec2}
+     */
     add(v) {
         return new Vec2(this.x + v.x, this.y + v.y);
     }
 
+    /**
+     * Vector magnitude.
+     * @returns {number}
+     */
     len() {
+        // Square-root of x^2 + y^2 for Euclidean length.
         return Math.sqrt(this.x * this.x + this.y * this.y);
     }
 
+    /**
+     * Unit (normalized) vector.
+     * @returns {Vec2}
+     */
     unit() {
+        // Prevent division by zero for zero vector.
         const len = this.len();
-        return len > 0 ? new Vec2(this.x / len, this.y / len) : new Vec2(0, 0);
+        if (len > 0) {
+            return new Vec2(this.x / len, this.y / len);
+        }
+        return new Vec2(0, 0);
     }
 
+    /**
+     * Scale vector by factor s.
+     * @param {number} s
+     * @returns {Vec2}
+     */
     scaled(s) {
         return new Vec2(this.x * s, this.y * s);
     }
 
+    /**
+     * Dot product with v.
+     * @param {Vec2} v
+     * @returns {number}
+     */
     dot(v) {
         return this.x * v.x + this.y * v.y;
     }
 }
 
+/**
+ * Simple deterministic RNG used for reproducible wave generation.
+ */
 class SeededRNG {
+    /**
+     * @param {number} seed
+     */
     constructor(seed) {
         // simple LCG constants
         this.state = seed % 2147483647;
         if (this.state <= 0) this.state += 2147483646;
     }
 
+    /**
+     * Next random value in [0,1).
+     * @returns {number}
+     */
     next() {
-        // return float [0,1)
         this.state = (this.state * 16807) % 2147483647;
         return (this.state - 1) / 2147483646;
     }
@@ -70,7 +123,14 @@ const TowerConfigs = {
     [TowerType.Sniper]: { radius: 180, damage: 2.5, attackCadence: 0.35, cost: 100, color: '#4169e1' }
 };
 
+/**
+ * Enemy actor following the path and taking damage from towers.
+ */
 class Enemy {
+    /**
+     * @param {Vec2} pos
+     * @param {number} typeID
+     */
     constructor(pos, typeID) {
         const cfg = EnemyConfigs[typeID];
         this.pos = pos;
@@ -82,20 +142,43 @@ class Enemy {
         this.color = cfg.color;
     }
 
+    /**
+     * Move along the path based on delta time.
+     * @param {number} dt
+     * @param {Vec2[]} path
+     */
     update(dt, path) {
-        if (this.pathIndex >= path.length - 1) return;
+        // If enemy already at the last path node, no movement occurs.
+        if (this.pathIndex >= path.length - 1) {
+            return;
+        }
+
+        // Determine target position on path and direction vector.
         const target = path[this.pathIndex + 1];
         const dir = target.sub(this.pos).unit();
+
+        // Move towards target by speed * delta time.
         this.pos = this.pos.add(dir.scaled(this.speed * dt));
+
+        // If enemy is close enough to the target node, advance path index.
         if (this.pos.sub(target).len() < 5) {
             this.pathIndex++;
         }
     }
 
+    /**
+     * Return true if enemy reached end of path.
+     * @param {Vec2[]} path
+     * @returns {boolean}
+     */
     reachedEnd(path) {
         return this.pathIndex >= path.length - 1;
     }
 
+    /**
+     * Return true if enemy health is depleted.
+     * @returns {boolean}
+     */
     isDead() {
         return this.health <= 0;
     }
@@ -105,7 +188,14 @@ class Enemy {
     }
 }
 
+/**
+ * Tower entity that targets enemies and fires at attack cadence.
+ */
 class Tower {
+    /**
+     * @param {Vec2} pos
+     * @param {number} typeID
+     */
     constructor(pos, typeID) {
         const cfg = TowerConfigs[typeID];
         this.pos = pos;
@@ -117,6 +207,12 @@ class Tower {
         this.color = cfg.color;
     }
 
+    /**
+     * Attempt to attack the nearest enemy in range. Returns hit enemy or null.
+     * @param {number} dt
+     * @param {Enemy[]} enemies
+     * @returns {Enemy|null}
+     */
     update(dt, enemies) {
         this.cooldown -= dt;
         if (this.cooldown > 0) return null;
@@ -141,7 +237,14 @@ class Tower {
     }
 }
 
+/**
+ * Visual laser effect from tower to enemy for a short duration.
+ */
 class Laser {
+    /**
+     * @param {Vec2} start
+     * @param {Vec2} end
+     */
     constructor(start, end) {
         this.start = start;
         this.end = end;
@@ -149,7 +252,13 @@ class Laser {
     }
 }
 
+/**
+ * Main game context, tick loop, and state manager.
+ */
 class Game {
+    /**
+     * @param {HTMLCanvasElement} canvas
+     */
     constructor(canvas) {
         this.canvas = canvas;
         this.ctx = canvas.getContext('2d');
@@ -194,6 +303,9 @@ class Game {
         this.setupWaveControls();
     }
 
+    /**
+     * Install input listeners for mouse and keyboard during gameplay.
+     */
     setupInput() {
         this.canvas.addEventListener('mousemove', (e) => {
             if (!this.placePreview) return;
@@ -236,6 +348,9 @@ class Game {
         if (btnSniper) btnSniper.addEventListener('click', () => this.startTowerPlacement(TowerType.Sniper));
     }
 
+    /**
+     * Setup control buttons related to wave management.
+     */
     setupWaveControls() {
         this.nextWaveButton = document.getElementById('btnNextWave');
         if (this.nextWaveButton) {
@@ -353,25 +468,52 @@ class Game {
     }
 
     isValidPlacement(pos) {
-        if (this.inPathArea(pos)) return false;
-        if (this.isTowerOverlap(pos)) return false;
+        // Tower cannot be placed on or too close to the path.
+        if (this.inPathArea(pos)) {
+            return false;
+        }
+
+        // Tower cannot overlap with existing towers.
+        if (this.isTowerOverlap(pos)) {
+            return false;
+        }
+
         return true;
     }
 
     inPathArea(pos) {
+        // Walk path segments and evaluate distance to placement point.
         for (let i = 0; i < this.path.length - 1; i++) {
-            if (this.distancePointToSegment(pos, this.path[i], this.path[i + 1]) < 30) return true;
+            // If distance from point to segment is less than threshold, position is invalid.
+            if (this.distancePointToSegment(pos, this.path[i], this.path[i + 1]) < 30) {
+                return true;
+            }
         }
         return false;
     }
 
+    /**
+     * Compute minimum distance from a point to a segment.
+     * @param {Vec2} p
+     * @param {Vec2} segA
+     * @param {Vec2} segB
+     * @returns {number}
+     */
     distancePointToSegment(p, segA, segB) {
         const segmentVector = segB.sub(segA);
         const pointVector = p.sub(segA);
+
+        // If segment is degenerate (single point), return distance to endpoint.
         const squaredLen = segmentVector.dot(segmentVector);
-        if (squaredLen === 0) return p.sub(segA).len();
+        if (squaredLen === 0) {
+            return p.sub(segA).len();
+        }
+
+        // Project point onto segment in parametric form and clamp within [0,1].
         let t = pointVector.dot(segmentVector) / squaredLen;
         t = Math.max(0, Math.min(1, t));
+
+        // Find closest point on segment and compute distance.
         const closest = segA.add(segmentVector.scaled(t));
         return p.sub(closest).len();
     }
@@ -383,29 +525,50 @@ class Game {
         return false;
     }
 
+    /**
+     * Spawn enemies for current wave based on RNG.
+     */
     spawnEnemyWave() {
+        // Number of enemies scales every 5 waves by one.
         const enemiesThisWave = 2 + Math.floor(this.wave / 5);
+
         for (let i = 0; i < enemiesThisWave; i++) {
+            // Deterministic random 0..1 based on seed for play replayability.
             const r = this.rng.next();
             let typeID = EnemyType.Default;
-            if (r < 0.25) typeID = EnemyType.Tank;
-            else if (r < 0.6) typeID = EnemyType.Fast;
+
+            // Assign heavier targets to early probability thresholds.
+            if (r < 0.25) {
+                typeID = EnemyType.Tank;
+            } else if (r < 0.6) {
+                typeID = EnemyType.Fast;
+            }
+
+            // Path start position is at path[0].
             this.enemies.push(new Enemy(this.path[0], typeID));
         }
     }
 
+    /**
+     * Game simulation tick: move enemies, resolve combat, win/lose conditions.
+     * @param {number} dt
+     */
     update(dt) {
+        // waveInProgress false means the player may start the next wave.
         if (!this.waveInProgress) {
             // awaiting player to press next wave
         }
 
+        // Process enemies in reverse order for safe removal while iterating.
         for (let i = this.enemies.length - 1; i >= 0; i--) {
             const e = this.enemies[i];
             e.update(dt, this.path);
             if (e.reachedEnd(this.path)) {
+                // Enemy slipped through, deduct life and remove from map.
                 this.lives--;
                 this.enemies.splice(i, 1);
             } else if (e.isDead()) {
+                // Enemy killed: reward gold, update stats, and remove.
                 this.gold += 25;
                 this.goldEarned += 25;
                 this.enemiesKilled++;
@@ -414,11 +577,13 @@ class Game {
         }
 
         if (this.waveInProgress && this.enemies.length === 0) {
+            // Wave complete, allow next wave and save progress.
             this.waveInProgress = false;
             this.updateWaveButtonState();
             this.saveGame();
         }
 
+        // Process tower attacks and collect laser visuals.
         for (const t of this.towers) {
             const shot = t.update(dt, this.enemies);
             if (shot) {
@@ -426,12 +591,16 @@ class Game {
             }
         }
 
+        // Fade out old laser effects.
         for (let i = this.lasers.length - 1; i >= 0; i--) {
             const l = this.lasers[i];
             l.time -= dt;
-            if (l.time <= 0) this.lasers.splice(i, 1);
+            if (l.time <= 0) {
+                this.lasers.splice(i, 1);
+            }
         }
 
+        // Lose condition check: no lives left.
         if (this.lives <= 0) {
             this.gameOver('All lives lost');
         }
@@ -450,7 +619,7 @@ class Game {
         }
         this.ctx.stroke();
 
-        // Draw path points
+        // Draw path points as white circles for the route nodes.
         this.ctx.fillStyle = 'white';
         for (const p of this.path) {
             this.ctx.beginPath();
@@ -471,24 +640,28 @@ class Game {
             this.ctx.fill();
         }
 
-        // Draw towers
+        // Draw tower entities on the map with base circle and center dot.
         for (const t of this.towers) {
             this.ctx.fillStyle = t.color;
             this.ctx.beginPath();
             this.ctx.arc(t.pos.x, t.pos.y, 10, 0, 2 * Math.PI);
             this.ctx.fill();
+
+            // Mark tower center to indicate precise location.
             this.ctx.fillStyle = 'white';
             this.ctx.beginPath();
             this.ctx.arc(t.pos.x, t.pos.y, 2, 0, 2 * Math.PI);
             this.ctx.fill();
         }
 
-        // Draw enemies
+        // Draw enemies as colored sprites with short status line.
         for (const e of this.enemies) {
             this.ctx.fillStyle = e.color;
             this.ctx.beginPath();
             this.ctx.arc(e.pos.x, e.pos.y, 7, 0, 2 * Math.PI);
             this.ctx.fill();
+
+            // simple direction marker to indicate enemy orientation
             this.ctx.strokeStyle = e.color;
             this.ctx.lineWidth = 3;
             this.ctx.beginPath();
@@ -507,9 +680,16 @@ class Game {
             this.ctx.stroke();
         }
 
-        // Update stats
+        // Update stats text with current game values.
         const waveStatus = this.waveInProgress ? 'In Progress' : 'Waiting';
-        this.statsDiv.innerHTML = `Lives: ${this.lives} Gold: ${this.gold} Wave: ${this.wave} (${waveStatus}) Towers: ${this.towers.length} Enemies: ${this.enemies.length} Selected: ${this.towerTypeName(this.selectedTowerType)}`;
+        const currentTowerType = this.towerTypeName(this.selectedTowerType);
+
+        this.statsDiv.innerHTML = `Lives: ${this.lives} ` +
+            `Gold: ${this.gold} ` +
+            `Wave: ${this.wave} (${waveStatus}) ` +
+            `Towers: ${this.towers.length} ` +
+            `Enemies: ${this.enemies.length} ` +
+            `Selected: ${currentTowerType}`;
     }
 
     towerTypeName(t) {
@@ -521,13 +701,22 @@ class Game {
         }
     }
 
+    /**
+     * End the game and navigate to game-over screen while preserving summary.
+     * @param {string} reason
+     */
     gameOver(reason) {
+        // Delete temporary game state from server/LocalStorage.
         this.clearSave();
+
+        // Record game-over details to display on game-over page.
         localStorage.setItem('gameOverReason', reason);
         localStorage.setItem('goldEarned', this.goldEarned);
         localStorage.setItem('enemiesKilled', this.enemiesKilled);
         localStorage.setItem('towersPlaced', this.towersPlaced);
         localStorage.setItem('wavesSurvived', this.wave);
+
+        // Redirect to final summary page.
         window.location.href = '/game-over';
     }
 

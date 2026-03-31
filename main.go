@@ -1,3 +1,10 @@
+// Package main implements a simple web-based tower defense game server.
+//
+// Features:
+// - user registration/login with bcrypt password hashing
+// - save/load game state into SQLite
+// - basic game lobby + routes for menu, tutorial, and gameplay
+// - game over scoreboard page
 package main
 
 import (
@@ -15,6 +22,8 @@ import (
 
 var db *sql.DB
 
+// initDB sets up the SQLite database connection and required tables.
+// This function is called once at application startup.
 func initDB() {
 	var err error
 	db, err = sql.Open("sqlite3", "accounts.db")
@@ -46,6 +55,7 @@ func initDB() {
 	}
 }
 
+// getCurrentUser returns the username from session, or empty when unauthenticated.
 func getCurrentUser(c *gin.Context) string {
 	s := sessions.Default(c)
 	user, ok := s.Get("user").(string)
@@ -55,6 +65,7 @@ func getCurrentUser(c *gin.Context) string {
 	return user
 }
 
+// isAllowedUsernameChar returns true if rune is allowed for usernames.
 func isAllowedUsernameChar(r rune) bool {
 	if r >= 'a' && r <= 'z' {
 		return true
@@ -71,6 +82,7 @@ func isAllowedUsernameChar(r rune) bool {
 	return false
 }
 
+// validateUsername checks username constraints and returns an error message when invalid.
 func validateUsername(username string) string {
 	if username == "" {
 		return "Username cannot be empty"
@@ -89,6 +101,7 @@ func validateUsername(username string) string {
 	return ""
 }
 
+// validatePassword checks password constraints and returns an error message when invalid.
 func validatePassword(password string) string {
 	if password == "" {
 		return "Password cannot be empty"
@@ -131,6 +144,7 @@ func main() {
 		c.HTML(http.StatusOK, "menu.html", gin.H{"User": getCurrentUser(c)})
 	})
 
+	// Registration endpoint: show form and handle new user creation.
 	r.GET("/register", func(c *gin.Context) {
 		c.HTML(http.StatusOK, "register.html", gin.H{"Error": ""})
 	})
@@ -144,11 +158,13 @@ func main() {
 			return
 		}
 		if errMsg := validateUsername(username); errMsg != "" {
+			// If username validation fails, show specific validation message.
 			c.HTML(http.StatusBadRequest, "register.html", gin.H{"Error": errMsg})
 			return
 		}
 
 		if errMsg := validatePassword(password); errMsg != "" {
+			// If password validation fails, show specific validation message.
 			c.HTML(http.StatusBadRequest, "register.html", gin.H{"Error": errMsg})
 			return
 		}
@@ -172,9 +188,11 @@ func main() {
 	})
 
 	r.POST("/login", func(c *gin.Context) {
+		// Extract form values from POST request.
 		username := c.PostForm("username")
 		password := c.PostForm("password")
 
+		// Fail early if required fields are missing.
 		if username == "" || password == "" {
 			c.HTML(http.StatusBadRequest, "login.html", gin.H{"Error": "Username and password cannot be empty"})
 			return
@@ -192,6 +210,7 @@ func main() {
 		}
 
 		if err := bcrypt.CompareHashAndPassword([]byte(storedHash), []byte(password)); err != nil {
+			// Incorrect password provided (hash mismatch) - generic message for security.
 			c.HTML(http.StatusUnauthorized, "login.html", gin.H{"Error": "Invalid credentials"})
 			return
 		}
